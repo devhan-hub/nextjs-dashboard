@@ -1,7 +1,6 @@
 import { formatCurrency } from './utils';
 import { collection, getDoc, getDocs, orderBy, query, limit, doc, where } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
-import test from 'node:test';
 
 export async function fetchRevenue() {
   try {
@@ -26,7 +25,7 @@ export async function fetchLatestInvoices() {
 
     const latestInvoices = await Promise.all(
       querySnapshot.docs.map(async (docm) => {
-        const customerRef = await doc(db, 'customers', docm.data().customer_id)
+        const customerRef =  doc(db, 'customers', docm.data().customer_id)
         const customersSnap = await getDoc(customerRef)
         const custmerData = customersSnap.data()
         return (
@@ -189,37 +188,30 @@ export async function fetchInvoicesPages() {
   }
 }
 
-// export async function fetchInvoiceById(id: string) {
-//   try {
-//     const data = await sql<InvoiceForm>`
-//       SELECT
-//         invoices.id,
-//         invoices.customer_id,
-//         invoices.amount,
-//         invoices.status
-//       FROM invoices
-//       WHERE invoices.id = ${id};
-//     `;
+export async function fetchInvoiceById(id) {
+  try {
+    const docRef = doc(db, 'invoices', id)
+    const querySnapshot = await getDoc(docRef);
+    const invoice = {
+      ...querySnapshot.data(),
+      id: querySnapshot.id,
+      amount: querySnapshot.data().amount / 100
+    }
+    return invoice;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch invoice.');
+  }
+}
 
-//     const invoice = data.rows.map((invoice) => ({
-//       ...invoice,
-//       // Convert amount from cents to dollars
-//       amount: invoice.amount / 100,
-//     }));
 
-//     return invoice[0];
-//   } catch (error) {
-//     console.error('Database Error:', error);
-//     throw new Error('Failed to fetch invoice.');
-//   }
-// }
 
 export async function fetchCustomers() {
   try {
-    const q = query(collection(db, 'customers', orderBy('name', asc)))
+    const q = query(collection(db, 'customers'), orderBy('name', 'asc'))
     const querySnapshot = await getDocs(q)
     const customers = querySnapshot.docs.map((doc) => (
-      { ...doc.date(), id: doc.id }
+      { name:doc.data().name, id: doc.id }
     ))
     return customers;
   } catch (err) {
